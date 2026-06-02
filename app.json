@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "CyberShield",
+    "slug": "cybershield",
+    "version": "1.0.0",
+    "sdkVersion": "54.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": false,
+    "platforms": ["ios", "android"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.deskworksolutions.cybershield"
+    },
+    "android": {
+      "package": "com.deskworksolutions.cybershield"
+    },
+    "backgroundColor": "#010810"
+  }
+}
