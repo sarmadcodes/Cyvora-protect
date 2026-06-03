@@ -9,84 +9,67 @@ import {
   Dimensions,
   StatusBar,
 } from 'react-native';
+import * as Device from 'expo-device';
+import * as Network from 'expo-network';
 import { COLORS } from '../constants/theme';
 import GlassCard from '../components/GlassCard';
+import { useLanguage } from '../context/LanguageContext';
 
 const { width } = Dimensions.get('window');
 
-const DEVICES = [
-  { id: 1, name: 'MacBook Pro 16"', type: 'laptop', icon: '💻', ip: '192.168.1.14', os: 'macOS 14.2', status: 'online' },
-  { id: 2, name: 'iPhone 15 Pro', type: 'mobile', icon: '📱', ip: '192.168.1.21', os: 'iOS 17.2', status: 'online' },
-  { id: 3, name: 'Desktop Workstation', type: 'desktop', icon: '🖥', ip: '192.168.1.8', os: 'Windows 11', status: 'online' },
-  { id: 4, name: 'NAS Storage', type: 'server', icon: '🗄', ip: '192.168.1.2', os: 'TrueNAS', status: 'online' },
-  { id: 5, name: 'Smart TV 4K', type: 'tv', icon: '📺', ip: '192.168.1.33', os: 'webOS 23', status: 'online' },
-  { id: 6, name: 'iPad Pro M2', type: 'tablet', icon: '⬛', ip: '192.168.1.28', os: 'iPadOS 17', status: 'online' },
+// Connected / monitored devices (read-only view)
+const NETWORK_DEVICES = [
+  { id: 2, name: 'Router — TP-Link AX6000', ip: '192.168.1.1',  icon: '⬡', status: 'online',  threat: false },
+  { id: 3, name: 'MacBook Pro 16"',         ip: '192.168.1.14', icon: '□', status: 'online',  threat: false },
+  { id: 4, name: 'Smart TV 4K',             ip: '192.168.1.33', icon: '▬', status: 'online',  threat: false },
+  { id: 5, name: 'Unknown Device',          ip: '192.168.1.55', icon: '?', status: 'unknown', threat: true  },
 ];
 
-function LockIcon({ locked, locking }) {
-  const scale = useRef(new Animated.Value(1)).current;
-  const shackleAnim = useRef(new Animated.Value(locked ? 0 : 1)).current;
-
-  useEffect(() => {
-    if (locking) {
-      Animated.sequence([
-        Animated.spring(scale, { toValue: 1.3, useNativeDriver: true }),
-        Animated.spring(scale, { toValue: 1, useNativeDriver: true }),
-        Animated.timing(shackleAnim, { toValue: 0, duration: 400, useNativeDriver: true }),
-      ]).start();
-    } else if (!locked) {
-      shackleAnim.setValue(1);
-    }
-  }, [locked, locking]);
-
-  const color = locked ? COLORS.secondary : COLORS.textDim;
-
+function DetailRow({ label, value, valueColor, mono = true }) {
   return (
-    <Animated.View style={[styles.lockIconWrap, { transform: [{ scale }] }]}>
-      <View style={[styles.lockBody, {
-        borderColor: color,
-        backgroundColor: locked ? 'rgba(0,255,157,0.1)' : 'transparent',
-        shadowColor: locked ? COLORS.secondary : 'transparent',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: locked ? 0.8 : 0,
-        shadowRadius: locked ? 10 : 0,
-      }]}>
-        <Text style={[styles.lockChar, { color }]}>{locked ? '🔒' : '🔓'}</Text>
-      </View>
-    </Animated.View>
+    <View style={styles.detailRow}>
+      <Text style={styles.detailLabel}>{label}</Text>
+      <Text
+        style={[
+          styles.detailValue,
+          mono && { fontFamily: 'monospace' },
+          valueColor && { color: valueColor },
+        ]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+      >
+        {value}
+      </Text>
+    </View>
   );
 }
 
-function DeviceCard({ device }) {
-  const [locked, setLocked] = useState(false);
+function MyDeviceCard({ t, deviceInfo }) {
+  const [locked, setLocked]   = useState(false);
   const [locking, setLocking] = useState(false);
-  const cardGlow = useRef(new Animated.Value(0)).current;
-  const scanLine = useRef(new Animated.Value(0)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
+  const cardGlow     = useRef(new Animated.Value(0)).current;
+  const iconPulse    = useRef(new Animated.Value(1)).current;
 
   const handleLock = () => {
     if (locking || locked) return;
     setLocking(true);
-
-    // Progress bar
-    Animated.timing(progressAnim, { toValue: 1, duration: 1800, useNativeDriver: false }).start();
-
-    // Scan line
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(scanLine, { toValue: 1, duration: 600, useNativeDriver: true }),
-        Animated.timing(scanLine, { toValue: 0, duration: 600, useNativeDriver: true }),
-      ])
-    ).start();
-
+    Animated.timing(progressAnim, {
+      toValue: 1,
+      duration: 1800,
+      useNativeDriver: false,
+    }).start();
     setTimeout(() => {
       setLocking(false);
       setLocked(true);
-      scanLine.stopAnimation();
+      progressAnim.setValue(1);
+      Animated.spring(iconPulse, { toValue: 1.18, useNativeDriver: true }).start(() =>
+        Animated.spring(iconPulse, { toValue: 1, useNativeDriver: true }).start()
+      );
       Animated.loop(
         Animated.sequence([
-          Animated.timing(cardGlow, { toValue: 1, duration: 1500, useNativeDriver: true }),
-          Animated.timing(cardGlow, { toValue: 0.3, duration: 1500, useNativeDriver: true }),
+          Animated.timing(cardGlow, { toValue: 1, duration: 1600, useNativeDriver: true }),
+          Animated.timing(cardGlow, { toValue: 0.25, duration: 1600, useNativeDriver: true }),
         ])
       ).start();
     }, 1900);
@@ -100,150 +83,344 @@ function DeviceCard({ device }) {
     progressAnim.setValue(0);
   };
 
-  const borderColor = locked ? COLORS.secondary : locking ? COLORS.warning : COLORS.border;
+  const accentColor = locked
+    ? COLORS.secondary
+    : locking
+    ? COLORS.warning
+    : COLORS.primary;
+
+  const statusText = locked
+    ? t.securedEncrypted
+    : locking
+    ? t.securingDevice
+    : `ONLINE  ●  AES-256`;
+
+  // Pick a device icon based on the real OS
+  const deviceIcon = deviceInfo.os?.toLowerCase().includes('ios') ? '📱' : '📱';
 
   return (
-    <Animated.View style={[
-      styles.deviceCard,
-      {
-        borderColor,
-        shadowColor: locked ? COLORS.secondary : locking ? COLORS.warning : 'transparent',
-        shadowOpacity: cardGlow,
-        shadowRadius: 12,
-        shadowOffset: { width: 0, height: 0 },
-      }
-    ]}>
-      {/* Scan line animation */}
-      {locking && (
-        <Animated.View style={[
-          styles.scanLine,
-          {
-            top: scanLine.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
-            opacity: scanLine.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, 1, 0] }),
-          }
-        ]} />
-      )}
-
-      {/* Locked green overlay */}
-      {locked && <View style={styles.lockedOverlay} />}
-
-      <View style={styles.deviceHeader}>
-        <View style={styles.deviceIconWrap}>
-          <Text style={styles.deviceEmoji}>{device.icon}</Text>
-          <View style={[styles.deviceStatusDot, {
-            backgroundColor: locked ? COLORS.secondary : device.status === 'online' ? COLORS.primary : COLORS.textDim
-          }]} />
-        </View>
-        <View style={styles.deviceInfo}>
-          <Text style={styles.deviceName}>{device.name}</Text>
-          <Text style={styles.deviceIp}>{device.ip}</Text>
-          <Text style={styles.deviceOs}>{device.os}</Text>
-        </View>
-        <LockIcon locked={locked} locking={locking} />
-      </View>
-
-      {/* Progress bar when locking */}
-      {(locking || locked) && (
-        <View style={styles.lockProgress}>
-          <Animated.View style={[
-            styles.lockProgressFill,
-            {
-              width: locked ? '100%' : progressAnim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
-              backgroundColor: locked ? COLORS.secondary : COLORS.warning,
-            }
-          ]} />
-        </View>
-      )}
-
-      <View style={styles.deviceFooter}>
-        <Text style={[styles.deviceStatusText, {
-          color: locked ? COLORS.secondary : locking ? COLORS.warning : COLORS.textDim
-        }]}>
-          {locked ? '● SECURED & ENCRYPTED' : locking ? '◌ SECURING...' : `● ${device.status.toUpperCase()}`}
-        </Text>
-
-        <TouchableOpacity
+    <GlassCard style={styles.myDeviceCard} accentColor={accentColor}>
+      {/* Header row */}
+      <View style={styles.myDeviceHeader}>
+        <Animated.View
           style={[
-            styles.lockBtn,
+            styles.deviceIconWrap,
             {
-              backgroundColor: locked ? 'rgba(0,255,157,0.1)' : 'rgba(0,212,255,0.08)',
-              borderColor: locked ? COLORS.secondary : COLORS.primary,
-            }
+              transform: [{ scale: iconPulse }],
+              borderColor: accentColor,
+              backgroundColor: locked
+                ? 'rgba(0,255,157,0.08)'
+                : 'rgba(0,212,255,0.07)',
+              shadowColor: accentColor,
+              shadowOpacity: cardGlow,
+              shadowRadius: 14,
+              shadowOffset: { width: 0, height: 0 },
+            },
           ]}
-          onPress={locked ? handleUnlock : handleLock}
-          activeOpacity={0.7}
-          disabled={locking}
         >
-          <Text style={[styles.lockBtnText, { color: locked ? COLORS.secondary : COLORS.primary }]}>
-            {locked ? 'UNLOCK' : locking ? '...' : 'LOCK'}
+          <Text style={styles.deviceIconEmoji}>{deviceIcon}</Text>
+          <View
+            style={[
+              styles.statusDot,
+              {
+                backgroundColor: locked ? COLORS.secondary : COLORS.primary,
+              },
+            ]}
+          />
+        </Animated.View>
+
+        <View style={styles.deviceNameBlock}>
+          {/* Real device name */}
+          <Text style={styles.deviceName} numberOfLines={1} adjustsFontSizeToFit>
+            {deviceInfo.name || 'My Device'}
           </Text>
-        </TouchableOpacity>
+          {/* Real model */}
+          <Text style={styles.deviceModel} numberOfLines={1}>
+            {deviceInfo.model || '—'}
+          </Text>
+          <Text style={[styles.deviceStatusText, { color: accentColor }]}>
+            {statusText}
+          </Text>
+        </View>
+
+        <View
+          style={[
+            styles.lockIndicator,
+            {
+              borderColor: accentColor,
+              backgroundColor: locked
+                ? 'rgba(0,255,157,0.07)'
+                : 'transparent',
+            },
+          ]}
+        >
+          <Text style={[styles.lockIndicatorIcon, { color: accentColor }]}>
+            {locked ? '🔒' : '🔓'}
+          </Text>
+        </View>
       </View>
-    </Animated.View>
+
+      {/* Progress bar */}
+      {(locking || locked) && (
+        <View style={styles.progressTrack}>
+          <Animated.View
+            style={[
+              styles.progressFill,
+              {
+                width: locked
+                  ? '100%'
+                  : progressAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0%', '100%'],
+                    }),
+                backgroundColor: locked ? COLORS.secondary : COLORS.warning,
+              },
+            ]}
+          />
+        </View>
+      )}
+
+      {/* Detail rows — only real data */}
+      <View style={styles.detailsBlock}>
+        <DetailRow
+          label="DEVICE"
+          value={deviceInfo.name || 'Unknown'}
+          valueColor={COLORS.text}
+        />
+        <View style={styles.detailDivider} />
+        <DetailRow
+          label="MODEL"
+          value={deviceInfo.model || 'Unknown'}
+          valueColor={COLORS.textSub}
+        />
+        <View style={styles.detailDivider} />
+        <DetailRow
+          label="OS"
+          value={deviceInfo.os || 'Unknown'}
+          valueColor={COLORS.textSub}
+        />
+        <View style={styles.detailDivider} />
+        <DetailRow
+          label="LOCAL IP"
+          value={deviceInfo.ip || 'Fetching...'}
+          valueColor={COLORS.primary}
+        />
+      </View>
+
+      {/* Action button */}
+      <TouchableOpacity
+        style={[
+          styles.lockBtn,
+          {
+            borderColor: accentColor,
+            backgroundColor: locked
+              ? 'rgba(0,255,157,0.08)'
+              : 'rgba(0,212,255,0.07)',
+          },
+        ]}
+        onPress={locked ? handleUnlock : handleLock}
+        activeOpacity={0.7}
+        disabled={locking}
+      >
+        <Text style={[styles.lockBtnText, { color: accentColor }]}>
+          {locked
+            ? `🔓  ${t.unlock}`
+            : locking
+            ? `◌  ${t.securingDevice}`
+            : `🔒  ${t.lock}`}
+        </Text>
+      </TouchableOpacity>
+    </GlassCard>
+  );
+}
+
+function NetworkDeviceRow({ device, t }) {
+  const pulse = useRef(
+    new Animated.Value(device.threat ? 1 : 0.6)
+  ).current;
+
+  useEffect(() => {
+    if (device.threat) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulse, {
+            toValue: 1,
+            duration: 700,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulse, {
+            toValue: 0.3,
+            duration: 700,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    }
+  }, []);
+
+  const dotColor = device.threat
+    ? COLORS.danger
+    : device.status === 'online'
+    ? COLORS.secondary
+    : COLORS.textDim;
+
+  return (
+    <View
+      style={[
+        styles.netDeviceRow,
+        device.threat && { borderColor: 'rgba(255,51,102,0.35)' },
+      ]}
+    >
+      <View
+        style={[
+          styles.netDeviceIcon,
+          {
+            borderColor: device.threat ? COLORS.danger : COLORS.border,
+          },
+        ]}
+      >
+        <Text
+          style={[
+            styles.netDeviceIconText,
+            {
+              color: device.threat ? COLORS.danger : COLORS.textSub,
+            },
+          ]}
+        >
+          {device.icon}
+        </Text>
+      </View>
+      <View style={styles.netDeviceInfo}>
+        <Text
+          style={[
+            styles.netDeviceName,
+            device.threat && { color: COLORS.danger },
+          ]}
+        >
+          {device.name}
+        </Text>
+        <Text style={styles.netDeviceIp}>{device.ip}</Text>
+      </View>
+      <Animated.View
+        style={[
+          styles.netStatusDot,
+          { backgroundColor: dotColor, opacity: pulse },
+        ]}
+      />
+      {device.threat && (
+        <View style={styles.threatBadge}>
+          <Text style={styles.threatBadgeText}>!</Text>
+        </View>
+      )}
+    </View>
   );
 }
 
 export default function DeviceLockScreen() {
-  const [allLocked, setAllLocked] = useState(false);
-  const [lockingAll, setLockingAll] = useState(false);
-  const headerPulse = useRef(new Animated.Value(1)).current;
+  const { t } = useLanguage();
+  const fadeIn = useRef(new Animated.Value(0)).current;
 
-  const handleLockAll = () => {
-    if (lockingAll) return;
-    setLockingAll(true);
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(headerPulse, { toValue: 1.05, duration: 500, useNativeDriver: true }),
-        Animated.timing(headerPulse, { toValue: 1, duration: 500, useNativeDriver: true }),
-      ])
-    ).start();
-    setTimeout(() => {
-      setAllLocked(true);
-      setLockingAll(false);
-      headerPulse.stopAnimation();
-      headerPulse.setValue(1);
-    }, 2200);
-  };
+  // Real device info state
+  const [deviceInfo, setDeviceInfo] = useState({
+    name:  null,
+    model: null,
+    os:    null,
+    ip:    null,
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Animated.timing(fadeIn, {
+      toValue: 1,
+      duration: 400,
+      useNativeDriver: true,
+    }).start();
+
+    async function fetchDeviceInfo() {
+      try {
+        // Real device name (e.g. "John's iPhone" or "Samsung Galaxy S24")
+        const name = Device.deviceName || Device.modelName || 'My Device';
+
+        // Real model (e.g. "Apple iPhone 15 Pro" or "Samsung SM-S928B")
+        const manufacturer = Device.manufacturer || '';
+        const modelName    = Device.modelName    || '';
+        const model        = manufacturer
+          ? `${manufacturer} ${modelName}`.trim()
+          : modelName || 'Unknown Model';
+
+        // OS string (e.g. "iOS 17.4" or "Android 14")
+        const osName    = Device.osName    || '';
+        const osVersion = Device.osVersion || '';
+        const os        = `${osName} ${osVersion}`.trim() || 'Unknown OS';
+
+        // Real local IP address
+        const networkState = await Network.getNetworkStateAsync();
+        let ip = '—';
+        if (networkState.isConnected) {
+          ip = await Network.getIpAddressAsync();
+        }
+
+        setDeviceInfo({ name, model, os, ip });
+      } catch (err) {
+        // Graceful fallback if anything fails
+        setDeviceInfo({
+          name:  Device.modelName || 'My Device',
+          model: 'Unknown Model',
+          os:    'Unknown OS',
+          ip:    'Unavailable',
+        });
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchDeviceInfo();
+  }, []);
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor="transparent"
+        translucent
+      />
 
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.headerSub}>CYBERSHIELD OS</Text>
-          <Text style={styles.headerTitle}>Device Control</Text>
+          <Text style={styles.headerSub}>{t.appSub}</Text>
+          <Text style={styles.headerTitle}>{t.deviceControl}</Text>
         </View>
-        <Animated.View style={{ transform: [{ scale: headerPulse }] }}>
-          <TouchableOpacity style={styles.lockAllBtn} onPress={handleLockAll} activeOpacity={0.8}>
-            <Text style={styles.lockAllIcon}>{allLocked ? '🔒' : '🔓'}</Text>
-            <Text style={styles.lockAllText}>{lockingAll ? 'LOCKING...' : allLocked ? 'ALL LOCKED' : 'LOCK ALL'}</Text>
-          </TouchableOpacity>
-        </Animated.View>
+        <View style={styles.headerBadge}>
+          <View style={styles.headerBadgeDot} />
+          <Text style={styles.headerBadgeText}>
+            {loading ? 'SCANNING...' : 'VERIFIED'}
+          </Text>
+        </View>
       </View>
 
-      {/* Summary */}
+      {/* Summary bar */}
       <View style={styles.summaryBar}>
-        <View style={styles.summaryItem}>
-          <Text style={[styles.summaryNum, { color: COLORS.primary }]}>{DEVICES.length}</Text>
-          <Text style={styles.summaryLabel}>TOTAL</Text>
-        </View>
-        <View style={styles.summaryDivider} />
-        <View style={styles.summaryItem}>
-          <Text style={[styles.summaryNum, { color: COLORS.secondary }]}>{allLocked ? DEVICES.length : 0}</Text>
-          <Text style={styles.summaryLabel}>SECURED</Text>
-        </View>
-        <View style={styles.summaryDivider} />
-        <View style={styles.summaryItem}>
-          <Text style={[styles.summaryNum, { color: COLORS.danger }]}>0</Text>
-          <Text style={styles.summaryLabel}>THREATS</Text>
-        </View>
-        <View style={styles.summaryDivider} />
-        <View style={styles.summaryItem}>
-          <Text style={[styles.summaryNum, { color: COLORS.primary }]}>128</Text>
-          <Text style={styles.summaryLabel}>MONITORED</Text>
-        </View>
+        {[
+          { num: '1',   label: t.total,         color: COLORS.primary   },
+          { num: '1',   label: t.secured,       color: COLORS.secondary },
+          { num: '0',   label: t.threatCount,   color: COLORS.danger    },
+          { num: '128', label: t.monitoredCount, color: COLORS.primary  },
+        ].map((item, i, arr) => (
+          <React.Fragment key={i}>
+            <View style={styles.summaryItem}>
+              <Text style={[styles.summaryNum, { color: item.color }]}>
+                {item.num}
+              </Text>
+              <Text style={styles.summaryLabel} numberOfLines={1}>
+                {item.label}
+              </Text>
+            </View>
+            {i < arr.length - 1 && (
+              <View style={styles.summaryDivider} />
+            )}
+          </React.Fragment>
+        ))}
       </View>
 
       <ScrollView
@@ -251,10 +428,37 @@ export default function DeviceLockScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        <Text style={styles.sectionLabel}>CONNECTED DEVICES</Text>
-        {DEVICES.map(device => (
-          <DeviceCard key={device.id} device={device} />
-        ))}
+        {/* My Device */}
+        <Text style={styles.sectionLabel}>{t.connectedDevices}</Text>
+        <Animated.View style={{ opacity: fadeIn }}>
+          {loading ? (
+            /* Loading placeholder */
+            <GlassCard style={styles.myDeviceCard} accentColor={COLORS.primary}>
+              <View style={styles.loadingPlaceholder}>
+                <View style={styles.loadingDot} />
+                <Text style={styles.loadingText}>SCANNING DEVICE...</Text>
+              </View>
+            </GlassCard>
+          ) : (
+            <MyDeviceCard t={t} deviceInfo={deviceInfo} />
+          )}
+        </Animated.View>
+
+        {/* Network */}
+        <Text style={[styles.sectionLabel, { marginTop: 22 }]}>
+          NETWORK DEVICES
+        </Text>
+        <GlassCard style={styles.networkCard} accentColor={COLORS.primary}>
+          {NETWORK_DEVICES.map((d, i) => (
+            <React.Fragment key={d.id}>
+              <NetworkDeviceRow device={d} t={t} />
+              {i < NETWORK_DEVICES.length - 1 && (
+                <View style={styles.netDivider} />
+              )}
+            </React.Fragment>
+          ))}
+        </GlassCard>
+
         <View style={{ height: 30 }} />
       </ScrollView>
     </View>
@@ -263,6 +467,7 @@ export default function DeviceLockScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
+
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -271,21 +476,44 @@ const styles = StyleSheet.create({
     paddingTop: 56,
     paddingBottom: 12,
   },
-  headerSub: { color: COLORS.primary, fontSize: 9, letterSpacing: 3, fontFamily: 'monospace', marginBottom: 2 },
-  headerTitle: { color: COLORS.text, fontSize: 22, fontWeight: '800', letterSpacing: 1 },
-  lockAllBtn: {
+  headerSub: {
+    color: COLORS.primary,
+    fontSize: 9,
+    letterSpacing: 3,
+    fontFamily: 'monospace',
+    marginBottom: 2,
+  },
+  headerTitle: {
+    color: COLORS.text,
+    fontSize: 22,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  headerBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(0,212,255,0.08)',
-    borderWidth: 1.5,
-    borderColor: COLORS.primary,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    gap: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(0,255,157,0.3)',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    backgroundColor: 'rgba(0,255,157,0.07)',
   },
-  lockAllIcon: { fontSize: 16 },
-  lockAllText: { color: COLORS.primary, fontSize: 10, fontWeight: '700', letterSpacing: 1.5, fontFamily: 'monospace' },
+  headerBadgeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.secondary,
+  },
+  headerBadgeText: {
+    color: COLORS.secondary,
+    fontSize: 8,
+    fontWeight: '700',
+    letterSpacing: 1.5,
+    fontFamily: 'monospace',
+  },
+
   summaryBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -296,98 +524,213 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 20,
   },
-  summaryItem: { flex: 1, alignItems: 'center' },
-  summaryNum: { fontSize: 20, fontWeight: '900', fontFamily: 'monospace' },
-  summaryLabel: { color: COLORS.textDim, fontSize: 8, letterSpacing: 1.5, fontFamily: 'monospace', marginTop: 2 },
+  summaryItem:    { flex: 1, alignItems: 'center' },
+  summaryNum:     { fontSize: 20, fontWeight: '900', fontFamily: 'monospace' },
+  summaryLabel: {
+    color: COLORS.textDim,
+    fontSize: 8,
+    letterSpacing: 1,
+    fontFamily: 'monospace',
+    marginTop: 2,
+  },
   summaryDivider: { width: 1, height: 30, backgroundColor: COLORS.border },
-  scroll: { flex: 1 },
+
+  scroll:        { flex: 1 },
   scrollContent: { paddingHorizontal: 16, paddingTop: 16 },
-  sectionLabel: { color: COLORS.textDim, fontSize: 9, letterSpacing: 3, fontFamily: 'monospace', marginBottom: 12 },
-  deviceCard: {
-    backgroundColor: 'rgba(6,18,40,0.9)',
-    borderWidth: 1.5,
-    borderRadius: 14,
+  sectionLabel: {
+    color: COLORS.textDim,
+    fontSize: 9,
+    letterSpacing: 3,
+    fontFamily: 'monospace',
     marginBottom: 10,
-    overflow: 'hidden',
-    position: 'relative',
   },
-  scanLine: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    height: 2,
-    backgroundColor: COLORS.warning,
-    zIndex: 10,
-    shadowColor: COLORS.warning,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
-  },
-  lockedOverlay: {
-    position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(0, 255, 157, 0.025)',
-    zIndex: 1,
-  },
-  deviceHeader: {
+
+  // Loading placeholder
+  loadingPlaceholder: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
-    gap: 12,
-    zIndex: 2,
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 40,
   },
-  deviceIconWrap: { position: 'relative' },
-  deviceEmoji: { fontSize: 30 },
-  deviceStatusDot: {
+  loadingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.primary,
+    opacity: 0.8,
+  },
+  loadingText: {
+    color: COLORS.primary,
+    fontSize: 11,
+    fontFamily: 'monospace',
+    letterSpacing: 3,
+  },
+
+  // My device card
+  myDeviceCard:   { marginBottom: 6 },
+  myDeviceHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 14,
+  },
+  deviceIconWrap: {
+    width: 58,
+    height: 58,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  deviceIconEmoji: { fontSize: 26 },
+  statusDot: {
     position: 'absolute',
-    bottom: -1,
-    right: -1,
-    width: 9,
-    height: 9,
+    bottom: -2,
+    right: -2,
+    width: 10,
+    height: 10,
     borderRadius: 5,
     borderWidth: 1.5,
     borderColor: COLORS.bg,
   },
-  deviceInfo: { flex: 1 },
-  deviceName: { color: COLORS.text, fontSize: 14, fontWeight: '700', marginBottom: 2 },
-  deviceIp: { color: COLORS.primary, fontSize: 11, fontFamily: 'monospace' },
-  deviceOs: { color: COLORS.textDim, fontSize: 10, fontFamily: 'monospace' },
-  lockIconWrap: {},
-  lockBody: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
+  deviceNameBlock:  { flex: 1 },
+  deviceName: {
+    color: COLORS.text,
+    fontSize: 14,
+    fontWeight: '800',
+    marginBottom: 2,
+    letterSpacing: 0.3,
+  },
+  deviceModel: {
+    color: COLORS.textDim,
+    fontSize: 10,
+    fontFamily: 'monospace',
+    marginBottom: 4,
+  },
+  deviceStatusText: {
+    fontSize: 10,
+    fontFamily: 'monospace',
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+  lockIndicator: {
+    width: 46,
+    height: 46,
+    borderRadius: 12,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  lockChar: { fontSize: 20 },
-  lockProgress: {
+  lockIndicatorIcon: { fontSize: 20 },
+
+  progressTrack: {
     height: 2,
     backgroundColor: 'rgba(255,255,255,0.06)',
-    marginHorizontal: 14,
+    marginHorizontal: 16,
     borderRadius: 1,
     overflow: 'hidden',
-    zIndex: 2,
   },
-  lockProgressFill: {
-    height: '100%',
-    borderRadius: 1,
+  progressFill: { height: '100%', borderRadius: 1 },
+
+  detailsBlock: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 4,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    overflow: 'hidden',
   },
-  deviceFooter: {
+  detailRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 14,
     paddingVertical: 10,
-    zIndex: 2,
   },
-  deviceStatusText: { fontSize: 10, fontFamily: 'monospace', letterSpacing: 1 },
+  detailLabel: {
+    color: COLORS.textDim,
+    fontSize: 9,
+    letterSpacing: 2.5,
+    fontFamily: 'monospace',
+    flex: 0,
+    marginRight: 8,
+  },
+  detailValue: {
+    color: COLORS.text,
+    fontSize: 11,
+    letterSpacing: 0.5,
+    flex: 1,
+    textAlign: 'right',
+  },
+  detailDivider: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginHorizontal: 12,
+  },
+
   lockBtn: {
-    borderWidth: 1,
-    borderRadius: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
+    margin: 16,
+    marginTop: 12,
+    borderWidth: 1.5,
+    borderRadius: 10,
+    paddingVertical: 13,
+    alignItems: 'center',
   },
-  lockBtnText: { fontSize: 9, fontWeight: '800', letterSpacing: 2, fontFamily: 'monospace' },
+  lockBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 2,
+    fontFamily: 'monospace',
+  },
+
+  // Network devices
+  networkCard: { marginBottom: 4 },
+  netDeviceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 12,
+  },
+  netDeviceIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  netDeviceIconText: { fontSize: 14 },
+  netDeviceInfo:     { flex: 1 },
+  netDeviceName: {
+    color: COLORS.text,
+    fontSize: 12,
+    fontWeight: '600',
+    fontFamily: 'monospace',
+  },
+  netDeviceIp: {
+    color: COLORS.primary,
+    fontSize: 10,
+    fontFamily: 'monospace',
+    marginTop: 1,
+  },
+  netStatusDot: { width: 8, height: 8, borderRadius: 4 },
+  netDivider: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginHorizontal: 14,
+  },
+  threatBadge: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: COLORS.danger,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 6,
+  },
+  threatBadgeText: { color: '#fff', fontSize: 11, fontWeight: '900' },
 });

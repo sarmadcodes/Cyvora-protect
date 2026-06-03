@@ -14,7 +14,7 @@ const { width, height } = Dimensions.get('window');
 const BOOT_LINES = [
   'Initializing CyberShield OS v4.2.1...',
   'Loading encryption modules... OK',
-  'Connecting to satellite network... OK',
+  'Connecting to servers network... OK',
   'Establishing VPN tunnels... OK',
   'Running threat scan... OK',
   'Firewall active. All systems nominal.',
