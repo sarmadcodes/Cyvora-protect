@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useCallback } from 'react';
 //  API BASE URL
 //
 //  ✅ PRODUCTION (live server — use this for APK builds)
-export const API_BASE = 'http://168.231.126.16:5002';
+export const API_BASE = 'http://168.231.126.16';
 
 //  🔜 PRODUCTION with domain (once DNS is pointed — swap to this later)
 // export const API_BASE = 'https://api.azizmughal.com';
