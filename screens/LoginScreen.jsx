@@ -235,7 +235,7 @@ function SignUpForm({ onSwitchToLogin, onSignUpSuccess }) {
           <Text style={[formStyles.successIconText, { color: COLORS.secondary }]}>✓</Text>
         </View>
         <Text style={[formStyles.successTitle, { color: COLORS.secondary }]}>NODE REGISTERED</Text>
-        <Text style={formStyles.successSub}>Identity verified. Entering CyberShield OS...</Text>
+        <Text style={formStyles.successSub}>Identity verified. Entering Cyvora Protect...</Text>
       </Animated.View>
     );
   }
@@ -353,7 +353,7 @@ export default function LoginScreen({ onLoginSuccess }) {
             <Animated.View style={[styles.logoWrap, { opacity: logoGlow }]}>
               <Text style={styles.logoCheck}>✓</Text>
             </Animated.View>
-            <Text style={styles.appName}>CYBERSHIELD</Text>
+            <Text style={styles.appName}>Cyvora Protect</Text>
             <Text style={styles.tagline}>ADVANCED THREAT INTELLIGENCE OS</Text>
             <View style={styles.badges}>
               {['AES-256', 'TLS 1.3', 'ZERO-TRUST'].map((b, i) => (
@@ -394,7 +394,7 @@ export default function LoginScreen({ onLoginSuccess }) {
           </Animated.View>
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>v4.2.1 — CYBERSHIELD OS</Text>
+            <Text style={styles.footerText}>v4.2.1 — Cyvora Protect</Text>
             <View style={styles.footerRow}>
               <View style={[styles.badgeDot, { backgroundColor: COLORS.secondary }]} />
               <Text style={[styles.footerText, { color: COLORS.secondary }]}>SECURE CHANNEL ACTIVE</Text>

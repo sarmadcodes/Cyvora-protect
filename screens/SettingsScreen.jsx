@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,12 +11,15 @@ import {
   Dimensions,
   Modal,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS } from '../constants/theme';
 import GlassCard from '../components/GlassCard';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 
 const { width } = Dimensions.get('window');
+
+const SETTINGS_KEY = '@cybershield_settings';
 
 // ─── SECTION LABEL ────────────────────────────────────────────────
 function SectionLabel({ text }) {
@@ -209,7 +212,7 @@ function LogoutModal({ visible, onConfirm, onCancel, t }) {
 
           <Text style={styles.modalTitle}>TERMINATE SESSION?</Text>
           <Text style={styles.modalSub}>
-            You will be signed out of CyberShield OS.{'\n'}All active connections will be closed.
+            You will be signed out of Cyvora Protect.{'\n'}All active connections will be closed.
           </Text>
 
           {/* Divider */}
@@ -242,6 +245,34 @@ export default function SettingsScreen({ onLogout }) {
   const [dnsFilter,      setDnsFilter]      = useState(true);
   const [encryptLogs,    setEncryptLogs]    = useState(true);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  // Load persisted settings on mount
+  useEffect(() => {
+    AsyncStorage.getItem(SETTINGS_KEY).then(raw => {
+      if (!raw) return;
+      try {
+        const s = JSON.parse(raw);
+        if (s.twoFA        !== undefined) setTwoFA(s.twoFA);
+        if (s.biometric    !== undefined) setBiometric(s.biometric);
+        if (s.threatAlerts !== undefined) setThreatAlerts(s.threatAlerts);
+        if (s.vpnAuto      !== undefined) setVpnAuto(s.vpnAuto);
+        if (s.dnsFilter    !== undefined) setDnsFilter(s.dnsFilter);
+        if (s.encryptLogs  !== undefined) setEncryptLogs(s.encryptLogs);
+      } catch (_) {}
+    }).catch(() => {});
+  }, []);
+
+  const saveSettings = (patch) => {
+    AsyncStorage.getItem(SETTINGS_KEY).then(raw => {
+      const current = raw ? JSON.parse(raw) : {};
+      AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...current, ...patch })).catch(() => {});
+    }).catch(() => {});
+  };
+
+  const makeToggle = (setter, key) => (val) => {
+    setter(val);
+    saveSettings({ [key]: val });
+  };
 
   const saveBtnScale = useRef(new Animated.Value(1)).current;
 
@@ -290,22 +321,22 @@ export default function SettingsScreen({ onLogout }) {
         {/* ── SECURITY ── */}
         <SectionLabel text={t.sectionSecurity} />
         <GlassCard style={styles.card} accentColor={COLORS.secondary}>
-          <ToggleRow icon="⊛" title={t.twoFA}       subtitle={t.twoFASub}       value={twoFA}       onToggle={setTwoFA}       accentColor={COLORS.secondary} />
-          <ToggleRow icon="⊙" title={t.biometric}   subtitle={t.biometricSub}   value={biometric}   onToggle={setBiometric}   accentColor={COLORS.secondary} />
-          <ToggleRow icon="▣" title={t.encryptLogs} subtitle={t.encryptLogsSub} value={encryptLogs} onToggle={setEncryptLogs} accentColor={COLORS.secondary} last />
+          <ToggleRow icon="⊛" title={t.twoFA}       subtitle={t.twoFASub}       value={twoFA}       onToggle={makeToggle(setTwoFA, 'twoFA')}             accentColor={COLORS.secondary} />
+          <ToggleRow icon="⊙" title={t.biometric}   subtitle={t.biometricSub}   value={biometric}   onToggle={makeToggle(setBiometric, 'biometric')}     accentColor={COLORS.secondary} />
+          <ToggleRow icon="▣" title={t.encryptLogs} subtitle={t.encryptLogsSub} value={encryptLogs} onToggle={makeToggle(setEncryptLogs, 'encryptLogs')} accentColor={COLORS.secondary} last />
         </GlassCard>
 
         {/* ── NETWORK ── */}
         <SectionLabel text={t.sectionNetwork} />
         <GlassCard style={styles.card} accentColor={COLORS.accent}>
-          <ToggleRow icon="⬡" title={t.vpnAuto}   subtitle={t.vpnAutoSub}   value={vpnAuto}   onToggle={setVpnAuto}   accentColor={COLORS.accent} />
-          <ToggleRow icon="◈" title={t.dnsFilter} subtitle={t.dnsFilterSub} value={dnsFilter} onToggle={setDnsFilter} accentColor={COLORS.accent} last />
+          <ToggleRow icon="⬡" title={t.vpnAuto}   subtitle={t.vpnAutoSub}   value={vpnAuto}   onToggle={makeToggle(setVpnAuto, 'vpnAuto')}     accentColor={COLORS.accent} />
+          <ToggleRow icon="◈" title={t.dnsFilter} subtitle={t.dnsFilterSub} value={dnsFilter} onToggle={makeToggle(setDnsFilter, 'dnsFilter')} accentColor={COLORS.accent} last />
         </GlassCard>
 
         {/* ── NOTIFICATIONS ── */}
         <SectionLabel text={t.sectionNotifications} />
         <GlassCard style={styles.card} accentColor={COLORS.warning}>
-          <ToggleRow icon="⚠" title={t.threatAlerts} subtitle={t.threatAlertsSub} value={threatAlerts} onToggle={setThreatAlerts} accentColor={COLORS.warning} last />
+          <ToggleRow icon="⚠" title={t.threatAlerts} subtitle={t.threatAlertsSub} value={threatAlerts} onToggle={makeToggle(setThreatAlerts, 'threatAlerts')} accentColor={COLORS.warning} last />
         </GlassCard>
 
         {/* ── DANGER ZONE ── */}

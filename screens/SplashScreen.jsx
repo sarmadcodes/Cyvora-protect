@@ -12,7 +12,7 @@ import { COLORS } from '../constants/theme';
 const { width, height } = Dimensions.get('window');
 
 const BOOT_LINES = [
-  'Initializing CyberShield OS v4.2.1...',
+  'Initializing Cyvora Protect v4.2.1...',
   'Loading encryption modules... OK',
   'Connecting to servers network... OK',
   'Establishing VPN tunnels... OK',
@@ -125,7 +125,7 @@ export default function SplashScreen({ onFinish }) {
           </Animated.View>
 
           <Animated.Text style={[styles.logoTitle, { opacity: logoOpacity }]}>
-            CYBERSHIELD
+            Cyvora Protect
           </Animated.Text>
           <Animated.Text style={[styles.logoSub, { opacity: logoOpacity }]}>
             ADVANCED THREAT INTELLIGENCE

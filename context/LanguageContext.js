@@ -2,12 +2,12 @@ import React, { createContext, useContext, useState } from 'react';
 
 export const TRANSLATIONS = {
   en: {
-    appName: 'CYBERSHIELD',
-    appSub: 'CYBERSHIELD OS',
+    appName: 'Cyvora Protect',
+    appSub: 'Cyvora Protect',
 
     // Splash
     bootLines: [
-      'Initializing CyberShield OS v4.2.1...',
+      'Initializing Cyvora Protect v4.2.1...',
       'Loading encryption modules... OK',
       'Connecting to server network... OK',
       'Establishing VPN tunnels... OK',
@@ -47,7 +47,7 @@ export const TRANSLATIONS = {
     identityVerified: 'Identity verified. Await admin activation.',
     pendingActivation: 'PENDING ACTIVATION',
     secureChannelActive: 'SECURE CHANNEL ACTIVE',
-    footerVersion: 'v4.2.1 — CYBERSHIELD OS',
+    footerVersion: 'v4.2.1 — Cyvora Protect',
 
     // BottomNav
     navDashboard: 'Dashboard',
@@ -199,12 +199,12 @@ export const TRANSLATIONS = {
   },
 
   es: {
-    appName: 'CYBERSHIELD',
-    appSub: 'CYBERSHIELD OS',
+    appName: 'Cyvora Protect',
+    appSub: 'Cyvora Protect',
 
     // Splash
     bootLines: [
-      'Inicializando CyberShield OS v4.2.1...',
+      'Inicializando Cyvora Protect v4.2.1...',
       'Cargando módulos de cifrado... OK',
       'Conectando a la red de servidores... OK',
       'Estableciendo túneles VPN... OK',
@@ -244,7 +244,7 @@ export const TRANSLATIONS = {
     identityVerified: 'Identidad verificada. Espera activación del admin.',
     pendingActivation: 'ACTIVACIÓN PENDIENTE',
     secureChannelActive: 'CANAL SEGURO ACTIVO',
-    footerVersion: 'v4.2.1 — CYBERSHIELD OS',
+    footerVersion: 'v4.2.1 — Cyvora Protect',
 
     // BottomNav
     navDashboard: 'Panel',

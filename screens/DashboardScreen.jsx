@@ -9,10 +9,13 @@ import {
   Dimensions,
   StatusBar,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS } from '../constants/theme';
 import GlobeComponent from '../components/GlobeComponent';
 import GlassCard from '../components/GlassCard';
 import { useLanguage } from '../context/LanguageContext';
+
+const VPN_KEY = '@cybershield_vpn_active';
 
 const { width } = Dimensions.get('window');
 
@@ -47,6 +50,24 @@ function VPNToggle() {
   const { t } = useLanguage();
   const [active, setActive] = useState(false);
   const [connecting, setConnecting] = useState(false);
+
+  // Load persisted VPN state on mount
+  useEffect(() => {
+    AsyncStorage.getItem(VPN_KEY).then(val => {
+      if (val === 'true') {
+        setActive(true);
+        Animated.loop(
+          Animated.sequence([
+            Animated.timing(glow, { toValue: 1, duration: 1200, useNativeDriver: true }),
+            Animated.timing(glow, { toValue: 0.4, duration: 1200, useNativeDriver: true }),
+          ])
+        ).start();
+        Animated.loop(
+          Animated.timing(tunnelAnim, { toValue: 1, duration: 1200, useNativeDriver: true })
+        ).start();
+      }
+    }).catch(() => {});
+  }, []);
   const scale = useRef(new Animated.Value(1)).current;
   const glow = useRef(new Animated.Value(0)).current;
   const ring1 = useRef(new Animated.Value(0)).current;
@@ -76,6 +97,7 @@ function VPNToggle() {
       setTimeout(() => {
         setConnecting(false);
         setActive(true);
+        AsyncStorage.setItem(VPN_KEY, 'true').catch(() => {});
         ring1.stopAnimation(); ring2.stopAnimation();
         Animated.loop(
           Animated.sequence([
@@ -89,6 +111,7 @@ function VPNToggle() {
       }, 2200);
     } else {
       setActive(false);
+      AsyncStorage.setItem(VPN_KEY, 'false').catch(() => {});
       glow.stopAnimation(); tunnelAnim.stopAnimation();
       glow.setValue(0);
     }
@@ -173,7 +196,13 @@ export default function DashboardScreen() {
         </View>
       </Animated.View>
 
-      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        removeClippedSubviews
+        overScrollMode="never"
+      >
 
         {/* Globe */}
         <View style={styles.globeSection}>

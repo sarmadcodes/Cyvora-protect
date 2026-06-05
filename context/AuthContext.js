@@ -1,4 +1,7 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const SESSION_KEY = '@cybershield_session';
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  API BASE URL
@@ -41,6 +44,21 @@ const AuthContext = createContext({
 export function AuthProvider({ children }) {
   const [user,  setUser]  = useState(null);
   const [token, setToken] = useState(null);
+  const [loaded, setLoaded] = useState(false);
+
+  // Restore session on app launch
+  useEffect(() => {
+    AsyncStorage.getItem(SESSION_KEY)
+      .then(raw => {
+        if (raw) {
+          const { user: u, token: tk } = JSON.parse(raw);
+          setUser(u);
+          setToken(tk);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoaded(true));
+  }, []);
 
   const login = useCallback(async (email, password) => {
     const res = await fetchWithTimeout(`${API_BASE}/api/auth/login`, {
@@ -56,6 +74,7 @@ export function AuthProvider({ children }) {
     if (!data.success) throw new Error(data.message || 'Login failed');
     setUser(data.user);
     setToken(data.token);
+    await AsyncStorage.setItem(SESSION_KEY, JSON.stringify({ user: data.user, token: data.token })).catch(() => {});
     return data;
   }, []);
 
@@ -73,13 +92,18 @@ export function AuthProvider({ children }) {
     if (!data.success) throw new Error(data.message || 'Signup failed');
     setUser(data.user);
     setToken(data.token);
+    await AsyncStorage.setItem(SESSION_KEY, JSON.stringify({ user: data.user, token: data.token })).catch(() => {});
     return data;
   }, []);
 
   const logout = useCallback(() => {
     setUser(null);
     setToken(null);
+    AsyncStorage.removeItem(SESSION_KEY).catch(() => {});
   }, []);
+
+  // Don't render until session is restored to avoid flash to login
+  if (!loaded) return null;
 
   return (
     <AuthContext.Provider value={{ user, token, login, signup, logout }}>
