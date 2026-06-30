@@ -2,19 +2,43 @@
   "expo": {
     "name": "Cyvora Protect",
     "slug": "cybershield",
-    "version": "1.0.0",
+    "version": "1.0.3",
     "sdkVersion": "54.0.0",
     "orientation": "portrait",
+    "icon": "./assets/images/AppIcon-1024.png",
     "userInterfaceStyle": "dark",
     "newArchEnabled": false,
-    "platforms": ["ios", "android"],
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.deskworksolutions.cybershield"
+      "bundleIdentifier": "com.cyvoraprotect.app",
+      "buildNumber": "7",
+      "icon": "./assets/images/AppIcon-1024.png",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDisplayName": "Cyvora Protect",
+        "CFBundleName": "Cyvora Protect",
+        "NSAppTransportSecurity": {
+          "NSExceptionDomains": {
+            "168.231.126.16": {
+              "NSExceptionAllowsInsecureHTTPLoads": true,
+              "NSIncludesSubdomains": true,
+              "NSTemporaryExceptionAllowsInsecureHTTPLoads": true
+            }
+          }
+        }
+      }
     },
     "android": {
       "package": "com.deskworksolutions.cybershield",
-      "permissions": ["READ_PHONE_STATE"],
+      "versionCode": 7,
+      "icon": "./assets/images/AppIcon-1024.png",
+      "permissions": [
+        "READ_PHONE_STATE"
+      ],
       "usesCleartextTraffic": true
     },
     "backgroundColor": "#010810",

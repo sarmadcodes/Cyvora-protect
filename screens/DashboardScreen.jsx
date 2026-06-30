@@ -12,6 +12,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS } from '../constants/theme';
 import GlobeComponent from '../components/GlobeComponent';
+import DashboardBackdrop from '../components/DashboardBackdrop';
 import GlassCard from '../components/GlassCard';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -183,6 +184,7 @@ export default function DashboardScreen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      <DashboardBackdrop />
 
       {/* Header */}
       <Animated.View style={[styles.header, { opacity: headerOpacity, transform: [{ translateY: headerY }] }]}>

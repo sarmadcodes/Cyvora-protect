@@ -55,7 +55,7 @@ function AppContent() {
   }, []);
 
   if (phase === 'splash') {
-    return <SplashScreen onFinish={() => setPhase('login')} />;
+    return <SplashScreen onFinish={() => setPhase(user ? 'app' : 'login')} />;
   }
   if (phase === 'login') {
     return <LoginScreen onLoginSuccess={() => setPhase('app')} />;

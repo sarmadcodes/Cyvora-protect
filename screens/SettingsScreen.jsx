@@ -121,11 +121,6 @@ function ProfileCard({ user }) {
     ? user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
     : '??';
 
-  // Format join date
-  const joinDate = user?.createdAt
-    ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-    : '—';
-
   const pulseAnim = useRef(new Animated.Value(1)).current;
   React.useEffect(() => {
     Animated.loop(
@@ -157,7 +152,6 @@ function ProfileCard({ user }) {
               <View style={[styles.profileBadgeDot, { backgroundColor: COLORS.secondary }]} />
               <Text style={[styles.profileBadgeText, { color: COLORS.secondary }]}>ACTIVE NODE</Text>
             </View>
-            <Text style={styles.profileJoined}>Joined {joinDate}</Text>
           </View>
         </View>
       </View>
@@ -433,7 +427,6 @@ const styles = StyleSheet.create({
   profileBadge:  { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(0,255,157,0.1)', borderWidth: 1, borderColor: 'rgba(0,255,157,0.25)', borderRadius: 20, paddingHorizontal: 7, paddingVertical: 3 },
   profileBadgeDot:  { width: 5, height: 5, borderRadius: 3 },
   profileBadgeText: { fontSize: 8, fontWeight: '800', letterSpacing: 1, fontFamily: 'monospace' },
-  profileJoined:    { color: COLORS.textDim, fontSize: 8, fontFamily: 'monospace', letterSpacing: 0.5 },
 
   profileStats: {
     flexDirection: 'row', borderTopWidth: 1, borderTopColor: COLORS.border,

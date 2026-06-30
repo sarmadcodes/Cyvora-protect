@@ -15,7 +15,6 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Device from 'expo-device';
-import * as Network from 'expo-network';
 import { COLORS } from '../constants/theme';
 import GlassCard from '../components/GlassCard';
 import { useLanguage } from '../context/LanguageContext';
@@ -25,11 +24,13 @@ const { width } = Dimensions.get('window');
 const IMEI_STORAGE_KEY   = '@cybershield_imei';
 const LOCK_STORAGE_KEY   = '@cybershield_device_locked';
 
-// Only 3 servers as requested
 const SERVERS = [
-  { id: 1, name: 'AMS-NL-01', location: 'Amsterdam, NL', ip: '185.220.101.10', load: 18, status: 'online', type: 'VPN Gateway'   },
-  { id: 2, name: 'FRA-DE-02', location: 'Frankfurt, DE', ip: '91.108.56.22',   load: 34, status: 'online', type: 'Firewall Node' },
-  { id: 3, name: 'NYC-US-01', location: 'New York, US',  ip: '104.21.44.180',  load: 61, status: 'online', type: 'Threat Intel'  },
+  { id: 1, name: 'PTV-IL-01', location: 'Petah Tikva, Israel',   flag: '🇮🇱', ip: '185.220.101.10', load: 93, status: 'online', type: 'VPN Gateway'   },
+  { id: 2, name: 'TOR-CA-02', location: 'Toronto, Canada',       flag: '🇨🇦', ip: '104.21.44.180',  load: 74, status: 'online', type: 'Firewall Node' },
+  { id: 3, name: 'JRN-SG-03', location: 'Jurong, Singapore',     flag: '🇸🇬', ip: '139.180.190.22', load: 41, status: 'online', type: 'Threat Intel'  },
+  { id: 4, name: 'MUM-IN-04', location: 'Mumbai, India',         flag: '🇮🇳', ip: '103.21.244.18',  load: 34, status: 'online', type: 'VPN Gateway'   },
+  { id: 5, name: 'TYO-JP-05', location: 'Tokyo, Japan',          flag: '🇯🇵', ip: '210.140.92.55',  load: 56, status: 'online', type: 'Firewall Node' },
+  { id: 6, name: 'FAR-KW-06', location: 'Farwaniya, Kuwait',     flag: '🇰🇼', ip: '94.249.116.7',   load: 18, status: 'online', type: 'Threat Intel'  },
 ];
 
 // ─── IMEI Modal ───────────────────────────────────────────────────────────────
@@ -267,7 +268,9 @@ function ServerRow({ server, last }) {
     <>
       <View style={styles.serverRow}>
         <View style={[styles.serverIconWrap, { borderColor: COLORS.primary }]}>
-          <Text style={[styles.serverIcon, { color: COLORS.primary }]}>◈</Text>
+          {server.flag
+            ? <Text style={styles.serverFlag}>{server.flag}</Text>
+            : <Text style={[styles.serverIcon, { color: COLORS.primary }]}>◈</Text>}
         </View>
         <View style={styles.serverInfo}>
           <Text style={styles.serverName}>{server.name}</Text>
@@ -328,11 +331,7 @@ export default function DeviceLockScreen() {
         const osVersion    = Device.osVersion || '';
         const os           = `${osName} ${osVersion}`.trim() || 'Unknown';
 
-        const networkState = await Network.getNetworkStateAsync();
-        let ip = '—';
-        if (networkState.isConnected) ip = await Network.getIpAddressAsync();
-
-        setDeviceInfo({ name, model, os, ip });
+        setDeviceInfo({ name, model, os, ip: '—' });
       } catch (_) {
         setDeviceInfo({ name: Device.modelName || 'My Device', model: 'Unknown', os: 'Unknown', ip: '—' });
       } finally {
@@ -481,6 +480,7 @@ const styles = StyleSheet.create({
   serverRow:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, gap: 12 },
   serverIconWrap: { width: 34, height: 34, borderRadius: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,212,255,0.06)' },
   serverIcon:     { fontSize: 15 },
+  serverFlag:     { fontSize: 18 },
   serverInfo:     { flex: 1 },
   serverName:     { color: COLORS.text, fontSize: 12, fontWeight: '700', fontFamily: 'monospace', marginBottom: 2 },
   serverIp:       { color: COLORS.primary, fontSize: 9, fontFamily: 'monospace', letterSpacing: 0.5, marginBottom: 2 },

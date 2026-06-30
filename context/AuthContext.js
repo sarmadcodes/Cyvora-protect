@@ -4,16 +4,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const SESSION_KEY = '@cybershield_session';
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  API BASE URL
-
-export const API_BASE = 'http://168.231.126.16';
-
-// export const API_BASE = 'https://api.azizmughal.com';
-
-//  🛠  LOCAL DEV (uncomment when developing locally)
-// export const API_BASE = 'http://10.0.2.2:5002';         // Android emulator
-// export const API_BASE = 'http://192.168.100.192:5002';  // Physical device
+//  SWITCH THIS when testing vs building
+//  true  = Expo Go (uses production server, no build needed)
+//  false = Production APK build
+const DEV_MODE = true;
 // ─────────────────────────────────────────────────────────────────────────────
+
+export const API_BASE = DEV_MODE
+  ? 'http://168.231.126.16'   // same production server, works in Expo Go too
+  : 'http://168.231.126.16';  // same for now — swap to https://yourdomain.com when ready
 
 const TIMEOUT_MS = 10000;
 
@@ -42,8 +41,8 @@ const AuthContext = createContext({
 });
 
 export function AuthProvider({ children }) {
-  const [user,  setUser]  = useState(null);
-  const [token, setToken] = useState(null);
+  const [user,   setUser]   = useState(null);
+  const [token,  setToken]  = useState(null);
   const [loaded, setLoaded] = useState(false);
 
   // Restore session on app launch
@@ -61,6 +60,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = useCallback(async (email, password) => {
+    console.log('[Auth] Logging in →', `${API_BASE}/api/auth/login`);
     const res = await fetchWithTimeout(`${API_BASE}/api/auth/login`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -71,6 +71,7 @@ export function AuthProvider({ children }) {
     try { data = await res.json(); }
     catch { throw new Error('Invalid response from server'); }
 
+    console.log('[Auth] Login response:', data);
     if (!data.success) throw new Error(data.message || 'Login failed');
     setUser(data.user);
     setToken(data.token);
@@ -79,6 +80,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const signup = useCallback(async (name, email, password) => {
+    console.log('[Auth] Signing up →', `${API_BASE}/api/auth/signup`);
     const res = await fetchWithTimeout(`${API_BASE}/api/auth/signup`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -89,6 +91,7 @@ export function AuthProvider({ children }) {
     try { data = await res.json(); }
     catch { throw new Error('Invalid response from server'); }
 
+    console.log('[Auth] Signup response:', data);
     if (!data.success) throw new Error(data.message || 'Signup failed');
     setUser(data.user);
     setToken(data.token);
@@ -97,12 +100,12 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(() => {
+    console.log('[Auth] Logging out');
     setUser(null);
     setToken(null);
     AsyncStorage.removeItem(SESSION_KEY).catch(() => {});
   }, []);
 
-  // Don't render until session is restored to avoid flash to login
   if (!loaded) return null;
 
   return (
