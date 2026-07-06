@@ -85,7 +85,7 @@ const inputStyles = StyleSheet.create({
 });
 
 // ─── LOGIN FORM ────────────────────────────────────────────────────
-function LoginForm({ onLoginSuccess, onSwitchToSignUp }) {
+function LoginForm({ onLoginSuccess }) {
   const { login } = useAuth();
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
@@ -164,107 +164,6 @@ function LoginForm({ onLoginSuccess, onSwitchToSignUp }) {
         </Animated.View>
       </TouchableOpacity>
 
-      <View style={formStyles.divider}>
-        <View style={formStyles.line} />
-        <Text style={formStyles.orText}>OR</Text>
-        <View style={formStyles.line} />
-      </View>
-
-      <TouchableOpacity onPress={onSwitchToSignUp} activeOpacity={0.7}>
-        <View style={formStyles.secondaryBtn}>
-          <Text style={formStyles.secondaryBtnText}>CREATE ACCOUNT</Text>
-        </View>
-      </TouchableOpacity>
-    </View>
-  );
-}
-
-// ─── SIGN UP FORM ──────────────────────────────────────────────────
-function SignUpForm({ onSwitchToLogin, onSignUpSuccess }) {
-  const { signup } = useAuth();
-  const [name,     setName]     = useState('');
-  const [email,    setEmail]    = useState('');
-  const [password, setPassword] = useState('');
-  const [confirm,  setConfirm]  = useState('');
-  const [errors,   setErrors]   = useState({});
-  const [loading,  setLoading]  = useState(false);
-  const [done,     setDone]     = useState(false);
-  const progressAnim = useRef(new Animated.Value(0)).current;
-  const doneOpacity  = useRef(new Animated.Value(0)).current;
-
-  const handleSignUp = async () => {
-    const errs = {};
-    if (!name.trim())                         errs.name     = 'Name required';
-    if (!email.trim() || !email.includes('@')) errs.email    = 'Valid email required';
-    if (!password || password.length < 8)      errs.password = 'Min 8 characters';
-    if (confirm !== password)                  errs.confirm  = 'Passwords do not match';
-
-    if (Object.keys(errs).length) { setErrors(errs); return; }
-
-    setErrors({});
-    setLoading(true);
-    progressAnim.setValue(0);
-
-    // Pulse the bar to show activity while waiting for API
-    Animated.timing(progressAnim, { toValue: 0.6, duration: 600, useNativeDriver: false }).start();
-
-    try {
-      await signup(name.trim(), email.trim(), password);
-      // Fill to 100% then show success and enter app
-      Animated.timing(progressAnim, { toValue: 1, duration: 200, useNativeDriver: false }).start(() => {
-        setLoading(false);
-        setDone(true);
-        Animated.timing(doneOpacity, { toValue: 1, duration: 300, useNativeDriver: true }).start(() => {
-          setTimeout(() => onSignUpSuccess(), 600);
-        });
-      });
-    } catch (err) {
-      setLoading(false);
-      progressAnim.setValue(0);
-      // Show server error under email field (e.g. "Email already registered")
-      setErrors({ email: err.message || 'Signup failed' });
-    }
-  };
-
-  const progressWidth = progressAnim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
-
-  if (done) {
-    return (
-      <Animated.View style={[formStyles.successBox, { opacity: doneOpacity }]}>
-        <View style={[formStyles.successIcon, { borderColor: COLORS.secondary }]}>
-          <Text style={[formStyles.successIconText, { color: COLORS.secondary }]}>✓</Text>
-        </View>
-        <Text style={[formStyles.successTitle, { color: COLORS.secondary }]}>NODE REGISTERED</Text>
-        <Text style={formStyles.successSub}>Identity verified. Entering Cyvora Protect...</Text>
-      </Animated.View>
-    );
-  }
-
-  return (
-    <View>
-      <CyberInput label="NAME"     value={name}     onChangeText={t => { setName(t);     setErrors(p => ({ ...p, name: '' }));     }} error={errors.name}     />
-      <CyberInput label="EMAIL"    value={email}    onChangeText={t => { setEmail(t);    setErrors(p => ({ ...p, email: '' }));    }} error={errors.email}    />
-      <CyberInput label="PASSWORD" value={password} onChangeText={t => { setPassword(t); setErrors(p => ({ ...p, password: '' })); }} secureTextEntry error={errors.password} />
-      <CyberInput label="CONFIRM PASSWORD" value={confirm} onChangeText={t => { setConfirm(t); setErrors(p => ({ ...p, confirm: '' })); }} secureTextEntry error={errors.confirm} />
-
-      <TouchableOpacity activeOpacity={0.8} onPress={handleSignUp} disabled={loading}>
-        <Animated.View style={[formStyles.primaryBtn, { borderColor: COLORS.secondary }]}>
-          <Text style={[formStyles.primaryBtnText, { color: COLORS.secondary }]}>
-            {loading ? 'REGISTERING...' : 'CREATE NODE →'}
-          </Text>
-          {loading && (
-            <View style={[formStyles.progressTrack, { backgroundColor: 'rgba(0,255,157,0.1)' }]}>
-              <Animated.View style={[formStyles.progressFill, { width: progressWidth, backgroundColor: COLORS.secondary }]} />
-            </View>
-          )}
-        </Animated.View>
-      </TouchableOpacity>
-
-      <TouchableOpacity onPress={onSwitchToLogin} activeOpacity={0.7} style={{ marginTop: 14, alignItems: 'center' }}>
-        <Text style={{ color: COLORS.textDim, fontSize: 10, fontFamily: 'monospace', letterSpacing: 2 }}>
-          ← BACK TO LOGIN
-        </Text>
-      </TouchableOpacity>
     </View>
   );
 }
@@ -301,12 +200,9 @@ const formStyles = StyleSheet.create({
 
 // ─── MAIN SCREEN ───────────────────────────────────────────────────
 export default function LoginScreen({ onLoginSuccess }) {
-  const [mode, setMode] = useState('login');
-
   const fadeAnim  = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(24)).current;
   const logoGlow  = useRef(new Animated.Value(0.5)).current;
-  const tabSlide  = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.parallel([
@@ -320,15 +216,6 @@ export default function LoginScreen({ onLoginSuccess }) {
       ])
     ).start();
   }, []);
-
-  const switchMode = (newMode) => {
-    Animated.timing(tabSlide, {
-      toValue: newMode === 'login' ? 0 : 1, duration: 220, useNativeDriver: false,
-    }).start();
-    setMode(newMode);
-  };
-
-  const tabLeft = tabSlide.interpolate({ inputRange: [0, 1], outputRange: ['0%', '50%'] });
 
   return (
     <View style={styles.container}>
@@ -366,30 +253,13 @@ export default function LoginScreen({ onLoginSuccess }) {
           </Animated.View>
 
           <Animated.View style={[styles.card, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-            <View style={[styles.accentLine, { backgroundColor: mode === 'login' ? COLORS.primary : COLORS.secondary }]} />
-            <View style={styles.tabs}>
-              <Animated.View style={[styles.tabIndicator, { left: tabLeft, backgroundColor: mode === 'login' ? COLORS.primary : COLORS.secondary }]} />
-              {['login', 'signup'].map((t) => (
-                <TouchableOpacity key={t} style={styles.tab} onPress={() => switchMode(t)} activeOpacity={0.7}>
-                  <Text style={[styles.tabText, mode === t && styles.tabTextActive]}>
-                    {t === 'login' ? 'LOGIN' : 'SIGN UP'}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            <View style={[styles.accentLine, { backgroundColor: COLORS.primary }]} />
             <View style={styles.form}>
               <View style={styles.formHeader}>
-                <Text style={[styles.formTitle, { color: mode === 'login' ? COLORS.primary : COLORS.secondary }]}>
-                  {mode === 'login' ? 'SECURE ACCESS' : 'NEW NODE'}
-                </Text>
-                <Text style={styles.formSub}>
-                  {mode === 'login' ? 'Enter credentials to connect' : 'Register a new identity'}
-                </Text>
+                <Text style={[styles.formTitle, { color: COLORS.primary }]}>SECURE ACCESS</Text>
+                <Text style={styles.formSub}>Enter credentials to connect</Text>
               </View>
-              {mode === 'login'
-                ? <LoginForm onLoginSuccess={onLoginSuccess} onSwitchToSignUp={() => switchMode('signup')} />
-                : <SignUpForm onSwitchToLogin={() => switchMode('login')} onSignUpSuccess={onLoginSuccess} />
-              }
+              <LoginForm onLoginSuccess={onLoginSuccess} />
             </View>
           </Animated.View>
 
