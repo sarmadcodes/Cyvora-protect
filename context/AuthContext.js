@@ -10,9 +10,7 @@ const SESSION_KEY = '@cybershield_session';
 const DEV_MODE = true;
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const API_BASE = DEV_MODE
-  ? 'http://168.231.126.16'   // same production server, works in Expo Go too
-  : 'http://168.231.126.16';  // same for now — swap to https://yourdomain.com when ready
+export const API_BASE = 'https://api.azizmughal.com';
 
 const TIMEOUT_MS = 10000;
 

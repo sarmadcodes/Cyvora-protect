@@ -20,16 +20,7 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleDisplayName": "Cyvora Protect",
-        "CFBundleName": "Cyvora Protect",
-        "NSAppTransportSecurity": {
-          "NSExceptionDomains": {
-            "168.231.126.16": {
-              "NSExceptionAllowsInsecureHTTPLoads": true,
-              "NSIncludesSubdomains": true,
-              "NSTemporaryExceptionAllowsInsecureHTTPLoads": true
-            }
-          }
-        }
+        "CFBundleName": "Cyvora Protect"
       }
     },
     "android": {
@@ -38,20 +29,10 @@
       "icon": "./assets/images/AppIcon-1024.png",
       "permissions": [
         "READ_PHONE_STATE"
-      ],
-      "usesCleartextTraffic": true
+      ]
     },
     "backgroundColor": "#010810",
-    "plugins": [
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "usesCleartextTraffic": true
-          }
-        }
-      ]
-    ],
+    "plugins": [],
     "extra": {
       "eas": {
         "projectId": "e7d9843d-0b43-4d85-b1bb-2397b042b2c8"
